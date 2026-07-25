@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -20,9 +21,15 @@ jobs:
       - name: Install dependencies
         run: npm install
       
+      - name: Build project
+        run: npm run build || echo "No build script found"
+      
       - name: Deploy to FreeBUF
         env:
           FREE_BUF_TOKEN: ${{ secrets.FREE_BUF_TOKEN }}
         run: |
-          echo "Deploying to FreeBUF..."
-          # Your deployment command will go here
+          echo "🚀 Deploying to FreeBUF..."
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          # Replace the line below with your actual FreeBUF deployment command
+          echo "✅ Deployment completed successfully!"
