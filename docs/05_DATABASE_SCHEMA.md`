@@ -1,0 +1,527 @@
+
+---
+
+# `05_DATABASE_SCHEMA.
+```markdown
+# Database Schema
+
+## 1. Purpose
+
+This document defines the logical data model.
+
+It covers:
+
+- Logical database schema
+- Entity relationships
+- Constraints
+- Data ownership
+- Access rules
+- Migration policy
+
+Product-level health data scope is defined in `01_MASTER_PROJECT_CONTEXT.md`.
+
+System architecture is defined in `02_ARCHITECTURE.md`.
+
+API contracts are defined in `04_API_CONTRACTS.md`.
+
+AI context behavior is defined in `06_AI_SPECIFICATION.md`.
+
+Database changes must follow `03_TEAM_WORKFLOW.md` and `07_INTEGRATION_RULES.md`.
+
+---
+
+## 2. User
+
+Represents an authenticated application user.
+
+Fields:
+
+- id
+- email
+- role
+- created_at
+- updated_at
+
+Possible roles:
+
+- PATIENT
+- DOCTOR
+- ADMIN
+
+Authentication credentials should be managed by an approved authentication system where possible.
+
+---
+
+## 3. Patient Profile
+
+Fields:
+
+- id
+- user_id
+- display_name
+- date_of_birth where legally and operationally required
+- timezone
+- preferred_language
+- created_at
+- updated_at
+
+Avoid unnecessary sensitive information.
+
+---
+
+## 4. Doctor Profile
+
+Fields:
+
+- id
+- user_id
+- display_name
+- professional_identifier where required
+- created_at
+- updated_at
+
+---
+
+## 5. Doctor-Patient Relationship
+
+Fields:
+
+- id
+- doctor_id
+- patient_id
+- status
+- created_at
+- updated_at
+
+Possible statuses:
+
+- ACTIVE
+- INACTIVE
+- PENDING
+
+Exact authorization model must be finalized.
+
+---
+
+## 6. Emergency Contact
+
+Fields:
+
+- id
+- patient_id
+- name
+- relationship
+- contact_information
+- consent_status
+- created_at
+- updated_at
+
+Emergency contact data must be protected.
+
+Emergency contacts may receive alerts only according to approved policies, authorization, consent, and configured settings.
+
+Emergency contacts do not receive unrestricted health data or arbitrary AI-generated information.
+
+---
+
+## 7. Health Entry
+
+Represents structured health information.
+
+Fields:
+
+- id
+- patient_id
+- recorded_at
+- sleep_hours
+- weight
+- mood
+- notes
+- created_at
+- updated_at
+
+Exact data types and units must be finalized.
+
+Weight units must be standardized internally.
+
+Health entries may originate from:
+
+- Direct structured patient input
+- Daily survey responses
+- Validated structured information from natural-language AI conversations
+
+AI-identified candidate data must pass backend validation before persistence.
+
+The source of structured health data should be preserved where required for traceability.
+
+---
+
+## 8. Symptom
+
+Fields:
+
+- id
+- patient_id
+- name
+- severity if applicable
+- recorded_at
+- notes
+- created_at
+
+Symptoms must not be treated as diagnoses.
+
+Symptoms may originate from:
+
+- Structured patient input
+- Surveys
+- Validated conversation information
+
+---
+
+## 9. Survey Response
+
+Fields:
+
+- id
+- patient_id
+- survey_type
+- responses
+- completed_at
+- created_at
+
+The complete survey response must be stored.
+
+Exact survey schema must be defined before production implementation.
+
+Where survey responses contain structured health information, relevant data may also be represented in health-data entities.
+
+---
+
+## 10. Conversation
+
+Fields:
+
+- id
+- patient_id
+- created_at
+- updated_at
+
+Complete conversation record must be stored according to privacy, security, authorization, consent, and retention policies.
+
+Stored history does not imply that complete history is sent to Gemma 4 for every request.
+
+Access control must be enforced.
+
+---
+
+## 11. Message
+
+Fields:
+
+- id
+- conversation_id
+- sender_type
+- content
+- created_at
+
+Possible sender types:
+
+- PATIENT
+- AI
+- SYSTEM
+
+Patient and AI messages should be stored as conversation history.
+
+---
+
+## 12. Conversation Summary
+
+Fields:
+
+- id
+- patient_id
+- summary
+- period_start
+- period_end
+- created_at
+- updated_at
+
+Purpose:
+
+- Reduce unnecessary context size.
+- Improve retrieval.
+
+Conversation summaries do not replace underlying stored history.
+
+The system may retrieve summaries instead of complete conversations when sufficient.
+
+---
+
+## 13. AI-Generated Summary
+
+Fields:
+
+- id
+- patient_id
+- summary_type
+- content
+- generated_at
+- reviewed_by_patient
+- shared_with_doctor
+- created_at
+
+Possible summary types:
+
+- PATIENT_SUMMARY
+- DOCTOR_SUMMARY
+
+Patient approval must be tracked where required.
+
+---
+
+## 14. Alert
+
+Fields:
+
+- id
+- patient_id
+- alert_type
+- severity
+- trigger_rule
+- status
+- created_at
+- resolved_at
+
+Alerts must originate from predefined deterministic rules.
+
+Exact thresholds must be explicitly approved.
+
+Gemma 4 must not independently create or trigger critical safety alerts.
+
+Possible statuses:
+
+- OPEN
+- ACKNOWLEDGED
+- RESOLVED
+
+---
+
+## 15. Notification
+
+Fields:
+
+- id
+- alert_id
+- recipient_type
+- recipient_id
+- delivery_method
+- delivery_status
+- sent_at
+
+Possible recipient types:
+
+- DOCTOR
+- EMERGENCY_CONTACT
+
+Authorization and applicable consent must be verified before sending.
+
+Sensitive information must not be sent to unauthorized recipients.
+
+---
+
+## 16. Consent Record
+
+Fields:
+
+- id
+- patient_id
+- consent_type
+- status
+- granted_at
+- revoked_at
+- updated_at
+
+Possible consent types:
+
+- DATA_PROCESSING
+- AI_PROCESSING
+- DOCTOR_SHARING
+- EMERGENCY_CONTACT_ALERTS
+
+Exact consent requirements must be reviewed for intended deployment jurisdiction.
+
+---
+
+## 17. Audit Record
+
+Where required, maintain audit records.
+
+Possible fields:
+
+- id
+- actor_id
+- action
+- resource_type
+- resource_id
+- timestamp
+
+Audit requirements must be reviewed before production deployment.
+
+---
+
+## 18. Entity Relationships
+
+Patient
+├── Health Entries
+├── Symptoms
+├── Survey Responses
+├── Conversations
+├── Conversation Summaries
+├── AI Summaries
+├── Alerts
+├── Emergency Contacts
+└── Consent Records
+
+Doctor
+└── Doctor-Patient Relationships
+    └── Patients
+
+Conversation
+└── Messages
+
+Alert
+└── Notifications
+
+---
+
+## 19. Data Ownership
+
+### Patients
+
+Patients own or control access to their health information according to authorization and consent models.
+
+Patients can access their own:
+
+- Health data
+- Conversations
+- Summaries
+
+### Doctors
+
+Doctors may access only patients with approved relationships.
+
+### AI
+
+AI does not directly own or control database data.
+
+AI receives authorized context through backend services.
+
+AI cannot directly write to the database.
+
+### Emergency Contacts
+
+Emergency contacts receive only approved notifications.
+
+### Administrators
+
+Administrative access must be explicitly defined and audited.
+
+---
+
+## 20. Access Rules
+
+Patients:
+
+- Can access own health data.
+- Can access own conversations.
+- Can access own summaries.
+
+Doctors:
+
+- Can access only authorized patients.
+
+AI:
+
+- Does not directly access database.
+- Receives authorized context through backend.
+- Receives only relevant context.
+
+Emergency contacts:
+
+- Receive only approved notifications.
+
+Admins:
+
+- Access must be explicitly defined and audited.
+
+---
+
+## 21. Constraints
+
+Database must enforce appropriate constraints for:
+
+- User identity
+- Patient ownership
+- Doctor-patient relationships
+- Authorized access
+- Required fields
+- Valid data types
+- Valid statuses
+- Consent state
+- Alert state
+- Data provenance where required
+
+Exact database-level constraints must be finalized with selected database technology.
+
+---
+
+## 22. Data Minimization
+
+Avoid unnecessary sensitive information.
+
+The system must distinguish between:
+
+- Data storage
+- AI context retrieval
+
+Survey responses and AI conversations are stored according to approved data-management policies.
+
+AI should not automatically receive entire database records or complete conversation histories.
+
+Detailed context rules are defined in `06_AI_SPECIFICATION.md`.
+
+---
+
+## 23. Migration Policy
+
+Any database schema change must:
+
+- Be documented.
+- Identify affected APIs.
+- Identify affected frontend components.
+- Identify affected AI tools.
+- Identify migration requirements.
+- Be reviewed before merging.
+- Be coordinated with affected workstreams.
+
+Cross-workstream workflow is defined in `07_INTEGRATION_RULES.md`.
+
+---
+
+## 24. Schema Status
+
+This document defines the initial logical database model.
+
+Before production implementation, finalize:
+
+- Exact database technology
+- Exact field data types
+- Required and optional fields
+- Foreign-key constraints
+- Indexes
+- Unique constraints
+- Data retention requirements
+- Migration tooling
+- Authorization implementation
+- Audit requirements
+- Data provenance requirements
