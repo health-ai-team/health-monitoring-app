@@ -1,33 +1,35 @@
 # System Architecture
 
-## 1. Purpose of This Document
+## 1. Purpose
 
 This document defines the technical architecture of the application.
 
 It covers:
 
-* Overall system architecture
-* Component interactions
-* Data flow
-* AI orchestration
-* Context-builder architecture
-* Alert architecture
-* Security architecture
-* Technology decisions
+- Overall system architecture
+- Component interactions
+- Data flow
+- AI orchestration
+- Context-builder architecture
+- Alert architecture
+- Security architecture
+- Technology decisions
 
-Product scope and goals are defined in `01_MASTER_PROJECT_CONTEXT.md`.
+Product scope is defined in `01_MASTER_PROJECT_CONTEXT.md`.
 
-Team development processes are defined in `03_TEAM_WORKFLOW.md`.
+Team processes are defined in `03_TEAM_WORKFLOW.md`.
 
 API interfaces are defined in `04_API_CONTRACTS.md`.
 
 Database structure is defined in `05_DATABASE_SCHEMA.md`.
 
-Detailed AI behavior is defined in `06_AI_SPECIFICATION.md`.
+AI behavior is defined in `06_AI_SPECIFICATION.md`.
+
+Cross-workstream integration is defined in `07_INTEGRATION_RULES.md`.
 
 ---
 
-# 2. Overall Architecture
+## 2. Overall Architecture
 
 The application consists of six primary layers:
 
@@ -50,66 +52,72 @@ Authentication + Authorization
 ↓
 Application Services
 ↓
-┌──────┴─────────────────┐
-↓                        ↓
-Database              AI Orchestration
-↓
-Context Builder
-↓
-Gemma 4
-
-Backend
-↓
-Safety / Alert Engine
-↓
-Notifications
+┌───────────────────────┐
+↓                       ↓
+Database          AI Orchestration
+                        ↓
+                  Context Builder
+                        ↓
+                     Gemma 4
+                        ↓
+                    Backend
+                        ↓
+                Safety / Alert Engine
+                        ↓
+                   Notifications
 
 The database is the central persistent source for health information, survey responses, AI conversations, and other application records.
 
 Gemma 4 does not directly access the database.
 
-The backend controls all data retrieval, validation, authorization, persistence, and AI interaction.
+The backend controls:
 
-The detailed responsibilities of Gemma 4 are defined in `06_AI_SPECIFICATION.md`.
+- Data retrieval
+- Validation
+- Authorization
+- Persistence
+- AI interaction
+
+Detailed AI behavior is defined in `06_AI_SPECIFICATION.md`.
 
 ---
 
-# 3. Presentation Layer
+## 3. Presentation Layer
 
 The frontend provides interfaces for patients and doctors.
 
-## Patient interfaces
+### Patient interfaces
 
-* Registration
-* Login
-* Dashboard
-* Daily health survey
-* Structured health data entry
-* AI chat
-* Health history
-* Trends
-* AI summaries
-* Notifications
+- Registration
+- Login
+- Dashboard
+- Daily health survey
+- Structured health data entry
+- AI chat
+- Health history
+- Trends
+- AI summaries
+- Notifications
 
-## Doctor interfaces
+### Doctor interfaces
 
-* Login
-* Patient list
-* Patient profile
-* Health charts
-* Trends
-* AI-generated summaries
-* Alerts
+- Login
+- Patient list
+- Patient profile
+- Health charts
+- Trends
+- AI-generated summaries
+- Alerts
 
 The doctor-facing experience should prioritize:
 
-* Charts
-* Trends
-* Meaningful changes over time
-* Summaries
-* Alerts
+- Charts
+- Trends
+- Meaningful changes over time
+- Summaries
+- Alerts
 
-The frontend may display underlying raw data where appropriate, but the primary doctor workflow should not depend on manually interpreting large amounts of raw health entries.
+The frontend may display raw data where appropriate, but the primary doctor workflow should not depend on manually interpreting large amounts of raw entries.
 
 The frontend must never directly access protected database credentials.
 
@@ -117,74 +125,75 @@ The frontend communicates with the backend through approved APIs defined in `04_
 
 ---
 
-# 4. Backend Layer
+## 4. Backend Layer
 
 The backend is responsible for:
 
-* Authentication
-* Authorization
-* API endpoints
-* Business logic
-* Data validation
-* Patient permissions
-* Doctor permissions
-* AI orchestration
-* AI-extracted health-data validation
-* Data persistence
-* Alert processing
-* Notifications
+- Authentication
+- Authorization
+- API endpoints
+- Business logic
+- Data validation
+- Patient permissions
+- Doctor permissions
+- AI orchestration
+- AI-extracted health-data validation
+- Data persistence
+- Alert processing
+- Notifications
 
-The backend is the primary control layer of the application.
+The backend is the primary control layer.
 
-The backend must validate both:
+The backend must validate:
 
-1. Structured health data submitted directly by the patient.
-2. Candidate structured health data identified from natural-language AI conversations.
+- Structured health data submitted directly by patients.
+- Candidate structured health data identified from natural-language AI conversations.
 
-Gemma 4 may identify candidate information, but the backend must control whether that information is valid and may be persisted as structured health data.
+Gemma 4 may identify candidate information, but the backend controls whether it is valid and may be persisted.
 
-The API contracts are defined in `04_API_CONTRACTS.md`.
+API contracts are defined in `04_API_CONTRACTS.md`.
 
 ---
 
-# 5. Database Layer
+## 5. Database Layer
 
-The database stores the application's persistent data, including:
+The database stores persistent data including:
 
-* Users
-* Patient profiles
-* Doctor profiles
-* Doctor-patient relationships
-* Emergency contacts
-* Health entries
-* Survey responses
-* Symptoms
-* AI conversations
-* AI messages
-* AI-generated summaries
-* Alerts
-* Notifications
-* Consent records
-* Audit records where required
+- Users
+- Patient profiles
+- Doctor profiles
+- Doctor-patient relationships
+- Emergency contacts
+- Health entries
+- Survey responses
+- Symptoms
+- AI conversations
+- AI messages
+- AI-generated summaries
+- Alerts
+- Notifications
+- Consent records
+- Audit records where required
 
-All patient survey responses and AI chat conversations are stored in the central database according to application privacy, security, authorization, consent, and retention policies.
+Survey responses and AI chat conversations are stored according to approved privacy, security, authorization, consent, and retention policies.
 
-Storage and retrieval are separate concepts:
+Storage and retrieval are separate concepts.
 
-* The system stores the conversation history.
-* The AI context builder retrieves only relevant authorized portions of that history for a specific AI task.
+The system stores conversation history.
+
+The AI context builder retrieves only relevant authorized portions for a specific task.
 
 The detailed logical schema is defined in `05_DATABASE_SCHEMA.md`.
 
 The database must enforce appropriate access controls.
 
-No AI agent should directly access the database without going through authorized backend logic.
+No AI agent should directly access the database without authorized backend logic.
 
 ---
 
-# 6. AI Orchestration Layer
+## 6. AI Orchestration Layer
 
-The AI orchestration layer prepares safe and relevant information for Gemma 4 and manages the interaction between the application and the model.
+The AI orchestration layer prepares safe and relevant information for Gemma 4.
 
 High-level flow:
 
@@ -209,57 +218,59 @@ Handle approved tool calls if required
 Validate AI response
 ↓
 If candidate health data is identified,
-send it through backend validation
+send through backend validation
 ↓
 Persist validated structured data where appropriate
 ↓
 Store conversation and messages
 ↓
-Return response to user
+Return response
 
 Detailed AI behavior is defined in `06_AI_SPECIFICATION.md`.
 
-AI-facing interfaces and tool contracts are defined in `04_API_CONTRACTS.md`.
+AI-facing interfaces are defined in `04_API_CONTRACTS.md`.
 
 ---
 
-# 7. Context Builder Architecture
+## 7. Context Builder Architecture
 
-The context builder is a system component that prepares relevant information for AI processing.
+The context builder prepares relevant information for AI processing.
 
 The application should not blindly send the entire patient history to Gemma 4.
 
 The context builder selects information relevant to the current task from the central database.
 
-For example, if a patient asks:
+Example:
+
+Patient asks:
 
 "Why have I been feeling so tired lately?"
 
 The system may retrieve:
 
-* Recent sleep history
-* Recent mood
-* Recent symptoms
-* Recent weight changes
-* Relevant previous conversations
+- Recent sleep history
+- Recent mood
+- Recent symptoms
+- Recent weight changes
+- Relevant previous conversations
 
 The context builder should not automatically retrieve unrelated data.
 
 The context builder must respect authentication and authorization.
 
-The context builder must distinguish between:
+It must distinguish between:
 
-* Data stored in the database
-* Data retrieved for a specific AI task
-* Data actually included in the prompt sent to Gemma 4
+- Data stored in the database
+- Data retrieved for a specific AI task
+- Data included in the prompt sent to Gemma 4
 
 Only relevant authorized context should be provided to Gemma 4.
 
-Detailed context retrieval rules and AI context philosophy are defined in `06_AI_SPECIFICATION.md`.
+Detailed context retrieval rules are defined in `06_AI_SPECIFICATION.md`.
 
 ---
 
-# 8. Function-Calling Architecture
+## 8. Function-Calling Architecture
 
 Gemma 4 may request controlled application tools.
 
@@ -269,7 +280,7 @@ Gemma 4
 ↓
 Requests approved tool
 ↓
-Backend receives tool request
+Backend receives request
 ↓
 Backend verifies authorization
 ↓
@@ -299,34 +310,34 @@ The AI model does not directly access protected systems.
 
 The AI model does not directly write to the database.
 
-The detailed behavior of AI tool use is defined in `06_AI_SPECIFICATION.md`.
+Detailed AI tool behavior is defined in `06_AI_SPECIFICATION.md`.
 
-The technical interfaces for the tools are defined in `04_API_CONTRACTS.md`.
+Technical interfaces are defined in `04_API_CONTRACTS.md`.
 
 ---
 
-# 9. Critical Safety Architecture
+## 9. Critical Safety Architecture
 
-The system must distinguish between:
+The system distinguishes between:
 
-## AI Layer
-
-Used for:
-
-* Interpretation
-* Summarization
-* Pattern explanation
-* Natural-language communication
-* Candidate information extraction from patient messages
-
-## Deterministic Safety Layer
+### AI Layer
 
 Used for:
 
-* Threshold checks
-* Safety rules
-* Alert creation
-* Notification triggers
+- Interpretation
+- Summarization
+- Pattern explanation
+- Natural-language communication
+- Candidate information extraction
+
+### Deterministic Safety Layer
+
+Used for:
+
+- Threshold checks
+- Safety rules
+- Alert creation
+- Notification triggers
 
 Example:
 
@@ -344,17 +355,15 @@ Doctor notified
 ↓
 Emergency contacts notified when authorized and configured
 
-The exact threshold values and safety rules must be explicitly approved before implementation.
+Exact thresholds must be explicitly approved before implementation.
 
-Neither Gemma 4 nor Freebuff may invent or independently define medical safety thresholds.
+Gemma 4 and Freebuff must not invent or independently define medical safety thresholds.
 
 Gemma 4 may explain a detected change but does not independently control the alert.
 
-Detailed AI safety limitations are defined in `06_AI_SPECIFICATION.md`.
-
 ---
 
-# 10. Data Flow — Patient Survey
+## 10. Data Flow — Patient Survey
 
 Patient
 ↓
@@ -374,13 +383,13 @@ Safety Rule Evaluation
 ↓
 Alert if applicable
 
-The complete survey response is stored in the database.
+The complete survey response is stored.
 
 Relevant structured health information may also be represented in health-data entities according to the database schema.
 
 ---
 
-# 11. Data Flow — AI Chat
+## 11. Data Flow — AI Chat
 
 Patient
 ↓
@@ -412,15 +421,15 @@ Store AI Response
 ↓
 Patient
 
-The complete AI conversation is stored in the central database.
+The complete AI conversation is stored.
 
-The entire conversation is not automatically sent back to Gemma 4 on every request.
+The entire conversation is not automatically sent to Gemma 4 on every request.
 
-Only relevant authorized context is retrieved and provided for the current task.
+Only relevant authorized context is retrieved and provided.
 
 ---
 
-# 12. Data Flow — Doctor Dashboard
+## 12. Data Flow — Doctor Dashboard
 
 Doctor
 ↓
@@ -438,13 +447,13 @@ Charts + Summaries
 ↓
 Doctor
 
-The doctor dashboard should prioritize meaningful trends and summaries over raw data presentation.
+The dashboard prioritizes meaningful trends and summaries over raw data presentation.
 
-The underlying health records remain available to authorized backend processes and may be presented where appropriate.
+Underlying records remain available to authorized backend processes.
 
 ---
 
-# 13. Data Flow — Alert
+## 13. Data Flow — Alert
 
 Validated Health Data
 ↓
@@ -453,39 +462,37 @@ Backend
 Deterministic Safety Rules
 ↓
 Approved Threshold Crossed?
-/ 
-No   Yes
-|     |
-End   Create Alert
+↓
+No → End
+Yes
+↓
+Create Alert
 ↓
 Determine Authorized Recipients
 ↓
 Notify Doctor
 ↓
-Notify Emergency Contacts if
-configured and authorized
+Notify Emergency Contacts if configured and authorized
 ↓
 Log Event
 
-Alerts must be generated from predefined deterministic rules.
+Alerts must originate from predefined deterministic rules.
 
-Gemma 4 may explain or summarize the event but must not independently trigger the critical alert.
+Gemma 4 may explain or summarize the event but must not independently trigger critical alerts.
 
 ---
 
-# 14. Security Architecture
+## 14. Security Architecture
 
-The system must enforce security through multiple layers.
-
-## Authentication
+### Authentication
 
 Users must be authenticated before accessing protected functionality.
 
-## Authorization
+### Authorization
 
 The backend must verify that the user is authorized to access the requested resource.
 
-## Data Access
+### Data Access
 
 Patients may access their own data.
 
@@ -495,13 +502,13 @@ Emergency contacts may receive only approved notifications.
 
 AI systems receive only authorized context through backend-controlled mechanisms.
 
-## Database Security
+### Database Security
 
 Protected database credentials must never be exposed to the frontend.
 
 AI agents must not directly access protected database systems.
 
-## Data Minimization
+### Data Minimization
 
 Only necessary data should be exposed to each component.
 
@@ -509,46 +516,47 @@ The AI context builder should retrieve only relevant information.
 
 Detailed database access rules are defined in `05_DATABASE_SCHEMA.md`.
 
-Detailed AI context minimization rules are defined in `06_AI_SPECIFICATION.md`.
+Detailed AI context rules are defined in `06_AI_SPECIFICATION.md`.
 
 ---
 
-# 15. Architecture Rules
+## 15. Architecture Rules
 
-1. The frontend never directly accesses protected database credentials.
-2. AI never directly accesses the database.
-3. AI never independently triggers emergency actions.
-4. AI never independently decides that a medical safety threshold has been crossed.
-5. All protected data access goes through authorization.
-6. Critical alerts are controlled by deterministic backend logic.
-7. Patient consent must be respected.
-8. API contracts must be documented.
-9. Database schema changes must be documented.
-10. Major architecture changes must be reviewed.
-11. Technology decisions must remain consistent across workstreams.
-12. Workstream-specific development rules are defined in `03_TEAM_WORKFLOW.md`.
+- The frontend never directly accesses protected database credentials.
+- AI never directly accesses the database.
+- AI never independently triggers emergency actions.
+- AI never independently decides that a medical safety threshold has been crossed.
+- All protected data access goes through authorization.
+- Critical alerts are controlled by deterministic backend logic.
+- Patient consent must be respected.
+- API contracts must be documented.
+- Database schema changes must be documented.
+- Major architecture changes must be reviewed.
+- Technology decisions must remain consistent across workstreams.
+
+Workstream-specific rules are defined in `03_TEAM_WORKFLOW.md`.
 
 ---
 
-# 16. Technology Decisions
+## 16. Technology Decisions
 
 The exact technology stack must be documented here before implementation begins.
 
 The team must explicitly decide:
 
-* Frontend framework
-* Backend framework
-* Programming language
-* Database
-* Authentication provider
-* Hosting platform
-* Gemma 4 access method
-* File storage
-* Notification service
-* Monitoring / logging
+- Frontend framework
+- Backend framework
+- Programming language
+- Database
+- Authentication provider
+- Hosting platform
+- Gemma 4 access method
+- File storage
+- Notification service
+- Monitoring / logging
 
-Once approved, these choices become the project standard.
+Once approved, these choices become project standards.
 
-Freebuff must not replace an approved technology with another technology without explicit approval.
+Freebuff must not replace an approved technology without explicit approval.
 
-Technology decisions that affect APIs, database structures, or AI integration must be coordinated according to `03_TEAM_WORKFLOW.md`.
+Technology decisions affecting APIs, database structures, or AI integration must be coordinated through `07_INTEGRATION_RULES.md`.
