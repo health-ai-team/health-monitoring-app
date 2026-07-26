@@ -21,7 +21,7 @@ node-compile-cache/
 bunx-0-create-vite@latest/
 
 # Daytona / Freebuff environment files
-daytona-*
+daytona*
 
 # Editor directories and files
 .vscode/*
